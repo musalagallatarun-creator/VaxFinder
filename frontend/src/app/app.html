@@ -1,0 +1,483 @@
+<div class="page">
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-icon">✚</span>
+      <span>Vax<span class="brand-light">Finder</span></span>
+    </a>
+    <span class="live-label">
+      <span class="live-dot"></span>
+      Centre availability
+    </span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <span class="eyebrow">VACCINATION, MADE SIMPLE</span>
+        <h1>Find your nearest<br /><span>vaccination centre.</span></h1>
+        <p>
+          Search centres, compare vaccine availability, and find listed
+          doses in one place.
+        </p>
+
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input
+            type="text"
+            [(ngModel)]="searchText"
+            placeholder="Enter city, PIN code, centre or vaccine"
+            aria-label="Search vaccination centres"
+          />
+          <button
+            type="button"
+            class="clear-button"
+            *ngIf="searchText"
+            (click)="searchText = ''"
+          >
+            Clear
+          </button>
+        </div>
+
+        <!-- Vaccine type filter -->
+        <div class="vaccine-filter">
+          <label for="vaccineType">Filter by vaccine type:</label>
+          <select
+            id="vaccineType"
+            [(ngModel)]="selectedVaccine"
+            (ngModelChange)="onFiltersChanged()"
+            aria-label="Filter by vaccine type"
+          >
+            <option value="">All vaccines</option>
+            <option value="Covishield">Covishield</option>
+            <option value="Covaxin">Covaxin</option>
+          </select>
+        </div>
+
+        <!-- Sort centres by available doses -->
+        <div class="sort-filter">
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="sortByDoses"
+              (ngModelChange)="onFiltersChanged()"
+            />
+            Show centres with the most available doses first
+          </label>
+        </div>
+
+        <div class="search-hint">
+          Try Hyderabad, 500001, Covishield or Covaxin
+        </div>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-circle">
+          <div class="shield">✚</div>
+          <div class="art-card card-top">✓ Safe &amp; accessible</div>
+          <div class="art-card card-bottom">♡ Your health matters</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Availability summary -->
+    <section class="stats" aria-label="Availability summary">
+      <article class="stat-card">
+        <span class="stat-icon purple">⌂</span>
+        <div>
+          <p>Centres listed</p>
+          <h2>{{ centres.length }}</h2>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon green">✓</span>
+        <div>
+          <p>Listed slots</p>
+          <h2>{{ totalSlots }}</h2>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-icon orange">＋</span>
+        <div>
+          <p>Listed doses</p>
+          <h2>{{ totalDoses }}</h2>
+        </div>
+      </article>
+    </section>
+
+    <!-- Vaccination centre results -->
+    <section class="results-section">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">EXPLORE AVAILABILITY</span>
+          <h2>Vaccination centres</h2>
+          <p class="results-subtitle">
+            {{ filteredCentres.length }}
+            centre{{ filteredCentres.length === 1 ? '' : 's' }} found
+          </p>
+        </div>
+
+        <button
+          class="refresh-button"
+          type="button"
+          (click)="loadCentres()"
+        >
+          ↻ Refresh
+        </button>
+      </div>
+
+      <div class="status-box" *ngIf="loading">
+        Loading vaccination centres…
+      </div>
+
+      <div class="error-box" *ngIf="!loading && errorMessage">
+        {{ errorMessage }}
+        <button type="button" (click)="loadCentres()">Try again</button>
+      </div>
+
+      <div
+        class="centre-grid"
+        *ngIf="!loading && !errorMessage && filteredCentres.length"
+      >
+        <article class="centre-card" *ngFor="let centre of filteredCentres">
+          <div class="card-heading">
+            <div class="hospital-icon">✚</div>
+            <span
+              class="availability-tag"
+              [class.low-stock]="centre.available_slots === 0"
+            >
+              {{
+                centre.available_slots > 0
+                  ? '● Slots listed'
+                  : '● No slots listed'
+              }}
+            </span>
+          </div>
+
+          <h3>{{ centre.name }}</h3>
+
+          <p class="location">
+            ⌖ {{ centre.city }} · PIN {{ centre.pincode }}
+          </p>
+
+          <p>
+            <strong>Address:</strong>
+            {{ centre.address || 'Not provided' }}
+          </p>
+
+          <p>
+            <strong>Phone:</strong>
+            <a *ngIf="centre.phone" [href]="'tel:' + centre.phone">
+              {{ centre.phone }}
+            </a>
+            <span *ngIf="!centre.phone">Not provided</span>
+          </p>
+
+          <div class="vaccine-row">
+            <span>Vaccine type</span>
+            <strong>{{ centre.vaccine || 'Not specified' }}</strong>
+          </div>
+
+          <div class="availability-grid">
+            <div class="availability-item">
+              <span>Listed slots</span>
+              <strong>{{ centre.available_slots }}</strong>
+            </div>
+            <div class="availability-item">
+              <span>Listed doses</span>
+              <strong>{{ centre.available_doses }}</strong>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <span>Centre ID #{{ centre.id }}</span>
+            <span class="demo-label">Demo data</span>
+          </div>
+
+          <a
+            *ngIf="centre.latitude != null && centre.longitude != null"
+            [href]="'https://www.openstreetmap.org/?mlat=' + centre.latitude + '&mlon=' + centre.longitude + '#map=16/' + centre.latitude + '/' + centre.longitude"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="directions-link"
+          >
+            View map and directions ↗
+          </a>
+        </article>
+      </div>
+
+      <div
+        class="empty-state"
+        *ngIf="!loading && !errorMessage && filteredCentres.length === 0"
+      >
+        <div class="empty-icon">⌕</div>
+        <h3>No centres found</h3>
+        <p>Try another city, PIN code, centre name, or vaccine type.</p>
+        <button
+          type="button"
+          (click)="searchText = ''; selectedVaccine = ''; onFiltersChanged()"
+        >
+          Show all centres
+        </button>
+      </div>
+    </section>
+
+    <!-- Search centres by city and PIN code -->
+    <section class="pincode-section find-centres-section">
+      <span class="eyebrow">FIND A LOCATION</span>
+      <h2>Find Vaccination Centres</h2>
+      <p>Search by city, exact PIN code, or both.</p>
+
+      <form class="pincode-form" (ngSubmit)="searchCentres()">
+        <input
+          type="text"
+          name="centreCitySearch"
+          [(ngModel)]="centreCitySearch"
+          placeholder="City, e.g. Hyderabad"
+          aria-label="Search city"
+        />
+
+        <input
+          type="text"
+          name="centrePincodeSearch"
+          [(ngModel)]="centrePincodeSearch"
+          placeholder="6-digit PIN code"
+          aria-label="Search PIN code"
+          maxlength="6"
+          inputmode="numeric"
+        />
+
+        <button type="submit" [disabled]="centreSearchLoading">
+          {{ centreSearchLoading ? 'Searching...' : 'Find Centres' }}
+        </button>
+      </form>
+
+      <p class="pincode-error" *ngIf="centreSearchError">
+        {{ centreSearchError }}
+      </p>
+
+      <p *ngIf="centreSearchLoading">Searching centre records...</p>
+
+      <div *ngIf="centreSearchDone">
+        <h3>Search Results ({{ centreSearchResults.length }})</h3>
+
+        <p *ngIf="centreSearchResults.length === 0">
+          No matching centres found. Try another city or PIN code.
+        </p>
+
+        <div class="centre-grid">
+          <article
+            class="centre-card"
+            *ngFor="let centre of centreSearchResults"
+          >
+            <h3>{{ centre.name }}</h3>
+
+            <p><strong>City:</strong> {{ centre.city }}</p>
+            <p><strong>PIN code:</strong> {{ centre.pincode }}</p>
+
+            <p>
+              <strong>Address:</strong>
+              {{ centre.address || 'Not provided' }}
+            </p>
+
+            <p>
+              <strong>Phone:</strong>
+              <a *ngIf="centre.phone" [href]="'tel:' + centre.phone">
+                {{ centre.phone }}
+              </a>
+              <span *ngIf="!centre.phone">Not provided</span>
+            </p>
+
+            <p>
+              <strong>Vaccine:</strong>
+              {{ centre.vaccine || 'Not specified' }}
+            </p>
+
+            <p>
+              <strong>Listed slots:</strong> {{ centre.available_slots }}
+            </p>
+
+            <p>
+              <strong>Listed doses:</strong> {{ centre.available_doses }}
+            </p>
+
+            <small>
+              Centre ID #{{ centre.id }} · Verify details before visiting
+            </small>
+
+            <a
+              *ngIf="centre.latitude != null && centre.longitude != null"
+              [href]="'https://www.openstreetmap.org/?mlat=' + centre.latitude + '&mlon=' + centre.longitude + '#map=16/' + centre.latitude + '/' + centre.longitude"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="directions-link"
+            >
+              View map and directions ↗
+            </a>
+          </article>
+        </div>
+      </div>
+
+      <h3>Centre Map</h3>
+      <p class="map-help">
+        Markers appear only for centres with valid coordinates saved in the database.
+      </p>
+
+      <div
+        #centreMap
+        id="centre-map"
+        aria-label="Map of searched vaccination centres"
+      ></div>
+
+      <p class="map-help">
+        Map tiles © OpenStreetMap contributors. Centre positions depend on
+        the coordinates stored in your database.
+      </p>
+    </section>
+
+    <!-- Search Telangana postal PIN codes -->
+    <section class="pincode-section">
+      <span class="eyebrow">SEARCH BY LOCATION</span>
+      <h2>Search Telangana PIN Codes</h2>
+      <p>Find postal offices and vaccination-centre records by PIN code.</p>
+
+      <form (ngSubmit)="searchPincodes()" class="pincode-form">
+        <input
+          type="text"
+          name="pincodeSearch"
+          [(ngModel)]="pincodeSearch"
+          placeholder="Enter 6-digit PIN code, e.g. 500001"
+          maxlength="6"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          aria-label="Enter six-digit PIN code"
+          required
+        />
+
+        <button
+          type="submit"
+          [disabled]="pincodeLoading || centresLoading"
+        >
+          {{
+            pincodeLoading || centresLoading
+              ? 'Searching...'
+              : 'Search PIN Code'
+          }}
+        </button>
+
+        <button
+          type="button"
+          class="pincode-clear"
+          (click)="clearPincodeSearch()"
+        >
+          Clear
+        </button>
+      </form>
+
+      <p class="pincode-error" *ngIf="pincodeError">
+        {{ pincodeError }}
+      </p>
+
+      <p *ngIf="pincodeLoading">Searching postal-office records...</p>
+
+      <div *ngIf="pincodeSearched && !pincodeLoading && !pincodeError">
+        <h3>Postal Offices ({{ postalOffices.length }})</h3>
+
+        <div
+          class="table-container"
+          *ngIf="postalOffices.length > 0; else noPostalOffices"
+        >
+          <table>
+            <thead>
+              <tr>
+                <th>Office Name</th>
+                <th>PIN Code</th>
+                <th>Delivery Status</th>
+                <th>Office Type</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let office of postalOffices">
+                <td>{{ office.office_name }}</td>
+                <td>{{ office.pincode }}</td>
+                <td>{{ office.delivery_status }}</td>
+                <td>{{ office.office_type }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #noPostalOffices>
+          <p>No postal offices found for this PIN code.</p>
+        </ng-template>
+      </div>
+
+      <div class="matching-centres">
+        <h3>Vaccination Centres for This PIN Code</h3>
+
+        <p *ngIf="centresLoading">
+          Searching vaccination-centre records...
+        </p>
+
+        <p class="pincode-error" *ngIf="centresError">
+          {{ centresError }}
+        </p>
+
+        <div *ngIf="centresSearched && !centresLoading && !centresError">
+          <ng-container *ngIf="matchingCentres.length > 0; else noCentres">
+            <p>
+              {{ matchingCentres.length }} matching centre record(s) found.
+            </p>
+
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Centre Name</th>
+                    <th>City</th>
+                    <th>PIN Code</th>
+                    <th>Vaccine</th>
+                    <th>Slots</th>
+                    <th>Doses</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let centre of matchingCentres">
+                    <td>{{ centre.name }}</td>
+                    <td>{{ centre.city }}</td>
+                    <td>{{ centre.pincode }}</td>
+                    <td>{{ centre.vaccine }}</td>
+                    <td>{{ centre.available_slots }}</td>
+                    <td>{{ centre.available_doses }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </ng-container>
+
+          <ng-template #noCentres>
+            <p>
+              No vaccination-centre records match this PIN code in your database.
+            </p>
+          </ng-template>
+        </div>
+      </div>
+
+      <p class="pincode-note">
+        Postal offices are not vaccination centres. Matching PIN codes do not
+        confirm a centre's exact location. Centre and vaccine availability
+        figures are demo data and are not verified in real time.
+      </p>
+    </section>
+
+    <footer>
+      <p>VaxFinder · Vaccination Centre Availability System</p>
+      <p>
+        Sample project data only. Availability is not real-time government information.
+      </p>
+    </footer>
+  </main>
+</div>
